@@ -13,6 +13,9 @@ export interface GardenEvent {
   id: string;
   summary: string;
   kind: "progress" | "outcome";
+  actor: "agent";
+  observer: "user";
+  recipient: "unknown";
 }
 export const WELL = { x: 105, y: 270 };
 export class GardenSimulation {
@@ -130,8 +133,10 @@ export class GardenSimulation {
       this.events.push({
         id: `garden-water-${this.plants.filter((p) => p.watered).length}`,
         kind: "progress",
-        summary:
-          "The host companion filled four portions of water at the well.",
+        actor: "agent",
+        observer: "user",
+        recipient: "unknown",
+        summary: "The companion filled four portions of water at the well.",
       });
       this.walkToPlant();
       return;
@@ -152,6 +157,9 @@ export class GardenSimulation {
         this.events.push({
           id: `garden-fed-${plant.id}`,
           kind: "progress",
+          actor: "agent",
+          observer: "user",
+          recipient: "unknown",
           summary: `The companion used one portion of compost on bed ${plant.id + 1}. This bed will yield an extra fruit.`,
         });
       }
@@ -160,7 +168,10 @@ export class GardenSimulation {
       this.events.push({
         id: `garden-watered-${plant.id}`,
         kind: "progress",
-        summary: `The host watered plant ${plant.id + 1}.`,
+        actor: "agent",
+        observer: "user",
+        recipient: "unknown",
+        summary: `The companion watered plant ${plant.id + 1}.`,
       });
       if (this.plants.every((p) => p.watered)) {
         this.phase = "growing";
@@ -178,7 +189,10 @@ export class GardenSimulation {
       this.events.push({
         id: `garden-picked-${plant.id}`,
         kind: "progress",
-        summary: `The host harvested bed ${plant.id + 1}: ${plant.fed ? "two fruits from the composted soil" : "one fruit"}.`,
+        actor: "agent",
+        observer: "user",
+        recipient: "unknown",
+        summary: `The companion harvested bed ${plant.id + 1}: ${plant.fed ? "two fruits from the composted soil" : "one fruit"}.`,
       });
       if (this.fruit === this.plants.length) {
         this.phase = "complete";
@@ -186,6 +200,9 @@ export class GardenSimulation {
         this.events.push({
           id: "garden-complete",
           kind: "outcome",
+          actor: "agent",
+          observer: "user",
+          recipient: "unknown",
           summary: `Garden complete: all eight beds watered and harvested. ${this.fruit + this.bonusFruit} fruits collected, including ${this.bonusFruit} extra from three portions of compost.`,
         });
       } else this.walkToPlant();

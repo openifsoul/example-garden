@@ -4,7 +4,7 @@ import { createGardenView } from "./renderer.js";
 
 export async function mount(
   container: HTMLElement,
-  options: GameMountOptions,
+  options: GameMountOptions
 ): Promise<MountedGame> {
   const simulation = new GardenSimulation();
   const root = document.createElement("section");
@@ -38,16 +38,16 @@ export async function mount(
     pending = false,
     frame = 0,
     lastTime = 0;
-  let timeout: ReturnType<typeof setTimeout> | undefined;
   let deferred: (() => void) | undefined;
   let view: Awaited<ReturnType<typeof createGardenView>> | undefined;
   let requestNumber = 0;
-  const idPrefix = `garden-${options.character.id}-${Math.random().toString(36).slice(2)}`;
+  const idPrefix = `garden-${options.character.id}-${Math.random()
+    .toString(36)
+    .slice(2)}`;
   const destroy = () => {
     if (destroyed) return;
     destroyed = true;
     cancelAnimationFrame(frame);
-    clearTimeout(timeout);
     options.signal.removeEventListener("abort", destroy);
     button.removeEventListener("click", toggle);
     view?.destroy();
@@ -93,7 +93,7 @@ export async function mount(
       scene,
       simulation,
       options.character.name,
-      options.character.id,
+      options.character.id
     );
     if (destroyed) {
       created.destroy();
@@ -118,46 +118,48 @@ export async function mount(
         ? `${options.character.name} is in a synthetic garden with eight thirsty plants. Choose the order for the whole watering batch. Only three portions of compost are available; the first three beds in your chosen order will each yield an extra fruit. The host handles two well trips, feeding and all movement.`
         : "All eight plants are watered and the fruit is now ripe. Choose the order for collecting the whole harvest; the host handles all movement and picking.";
     speech.textContent = "Choosing a garden priority…";
-    // Bound local waiting without claiming cancellation of an external request.
+    // The bounded SDK bridge owns the request deadline. A shorter host timer
+    // would discard valid slower replies before that configured budget.
     const fallback = {
       choiceId: "near-first",
       speech: "I will start with the nearest bed.",
       source: "fallback" as const,
     };
-    void Promise.race([
-      Promise.resolve()
-        .then(() =>
-          options.bridge.decide({
-            requestId,
-            context,
-            choices: [
-              { id: "near-first", label: "Near bed first" },
-              { id: "far-first", label: "Far bed first" },
-            ],
-            fallbackChoiceId: "near-first",
-          }),
-        )
-        .catch(() => fallback),
-      new Promise<typeof fallback>((resolve) => {
-        timeout = setTimeout(() => resolve(fallback), 15000);
-      }),
-    ]).then((decision) => {
-      clearTimeout(timeout);
-      const apply = () => {
-        if (destroyed || simulation.phase !== phase) return;
-        const valid =
-          decision != null &&
-          ["near-first", "far-first"].includes(decision.choiceId) &&
-          typeof decision.speech === "string";
-        simulation.setPriority(valid ? decision.choiceId : "near-first");
-        speech.textContent = `${options.character.name}: ${valid && decision.speech.trim() ? decision.speech.slice(0, 280) : fallback.speech}${!valid || decision.source === "fallback" ? " (Host fallback)" : ""}`;
-        view?.say(valid ? decision.speech : fallback.speech);
-        pending = false;
-      };
-      if (destroyed) return;
-      if (paused) deferred = apply;
-      else apply();
-    });
+    void Promise.resolve()
+      .then(() =>
+        options.bridge.decide({
+          requestId,
+          context,
+          choices: [
+            { id: "near-first", label: "Near bed first" },
+            { id: "far-first", label: "Far bed first" },
+          ],
+          fallbackChoiceId: "near-first",
+        })
+      )
+      .catch(() => fallback)
+      .then((decision) => {
+        const apply = () => {
+          if (destroyed || simulation.phase !== phase) return;
+          const valid =
+            decision != null &&
+            ["near-first", "far-first"].includes(decision.choiceId) &&
+            typeof decision.speech === "string";
+          simulation.setPriority(valid ? decision.choiceId : "near-first");
+          speech.textContent = `${options.character.name}: ${
+            valid && decision.speech.trim()
+              ? decision.speech.slice(0, 280)
+              : fallback.speech
+          }${
+            !valid || decision.source === "fallback" ? " (Host fallback)" : ""
+          }`;
+          view?.say(valid ? decision.speech : fallback.speech);
+          pending = false;
+        };
+        if (destroyed) return;
+        if (paused) deferred = apply;
+        else apply();
+      });
   };
   const tick = (time: number) => {
     if (destroyed) return;
@@ -177,15 +179,21 @@ export async function mount(
         simulation.phase === "complete"
           ? "Harvest complete"
           : pending
-            ? "Choosing priorities"
-            : simulation.phase === "growing"
-              ? `Fruit ripening ${Math.round(simulation.growth * 100)}%`
-              : `${simulation.task[0].toUpperCase()}${simulation.task.slice(1)}`;
+          ? "Choosing priorities"
+          : simulation.phase === "growing"
+          ? `Fruit ripening ${Math.round(simulation.growth * 100)}%`
+          : `${simulation.task[0].toUpperCase()}${simulation.task.slice(1)}`;
       const nextStatus = `${activity} · ${simulation.progress}`;
       if (status.textContent !== nextStatus) status.textContent = nextStatus;
       if (simulation.phase === "complete") {
         button.disabled = true;
-        speech.textContent = `${options.character.name} finished the garden visit. ${simulation.fruit + simulation.bonusFruit} fruits are in the basket, with ${simulation.bonusFruit} extra from compost.`;
+        speech.textContent = `${
+          options.character.name
+        } finished the garden visit. ${
+          simulation.fruit + simulation.bonusFruit
+        } fruits are in the basket, with ${
+          simulation.bonusFruit
+        } extra from compost.`;
       }
       view?.render();
     }

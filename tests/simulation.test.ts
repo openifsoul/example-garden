@@ -80,3 +80,24 @@ test("companion distributes only three compost portions in its chosen order and 
     assert.deepEqual(host.drainEvents(), []);
   }
 });
+
+test("actual garden actions belong to the companion while the player observes", () => {
+  const host = new GardenSimulation();
+  const events = [];
+  for (let i = 0; i < 3000 && host.phase !== "complete"; i++) {
+    if (host.needsDecision) host.setPriority("near-first");
+    host.step(0.1);
+    events.push(...host.drainEvents());
+  }
+  assert.ok(
+    events.some((event) => event.summary.includes("companion watered")),
+  );
+  assert.ok(
+    events.some((event) => event.summary.includes("companion harvested")),
+  );
+  for (const event of events) {
+    assert.equal(event.actor, "agent");
+    assert.equal(event.observer, "user");
+    assert.equal(event.recipient, "unknown");
+  }
+});

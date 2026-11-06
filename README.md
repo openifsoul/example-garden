@@ -98,3 +98,11 @@ checks. Bubbles type the text visually, announce the whole line accessibly, resp
 reduced motion and release timers/animations on pause or destruction. The SDK
 returns authored scenario/fallback reactions instead of quoting raw host reports;
 model plan explanations are not dialogue. No action authority is added.
+
+Host-requested decisions and remarks await the SDK bridge's configured bounded
+request deadline. The game does not impose a shorter model-independent timeout
+that could discard a valid slower reply. Rejected requests retain the existing
+labelled host fallback/unavailable state, and phase/version, pause and destruction
+checks still prevent stale adoption or late presentation. A custom injected
+`GameBridge` must provide bounded settlement and honor its connection lifetime;
+an indefinitely pending custom bridge is not a supported integration.
