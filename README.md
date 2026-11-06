@@ -4,7 +4,7 @@ Public source: [openifsoul/example-garden](https://github.com/openifsoul/example
 
 Independent original browser host, extracted from the IfSoul demonstration. This
 repository owns the game and its adapter; it is not part of a central game catalog
-implementation. Engine: pixi.js. Source and vector assets
+implementation. Engine: pixi.js. Source and original game assets
 are Apache-2.0; adapted shadcn Button retains its MIT notice in LICENSES.
 
 ## Run independently
@@ -57,7 +57,7 @@ deployment or production support is claimed by this example.
 
 ## Game controls and limits
 
-The companion fills a four-portion can at the well, waters eight plants over two trips, waits for ripening and collects all eight fruits. A visit takes about 156–161 active seconds. It requests two batch priorities; there is no per-plant inference. The host validates near-first/far-first and reports only completed actions.
+The companion fills a four-portion can at the well, waters eight plants over two trips, waits for ripening and harvests all eight beds. The first three beds in the chosen watering order receive one of three compost portions and yield an extra fruit each. The companion handles feeding autonomously; the player only observes. A visit takes about 165–175 active seconds, and a full harvest yields eleven fruits. The scene shows water, feeding, ripening and the filling basket. It requests two batch priorities; there is no per-plant inference. The host validates near-first/far-first and reports only completed actions.
 
 The local .npmrc selects hoisted installation because pnpm bundling requires it.
 No dependencies resolve through a sibling checkout. The included SDK tarball is
@@ -80,3 +80,21 @@ The standalone entry already includes its game's styles through the game module.
 Independent validation used source copies outside the Core checkout, including
 the supplied vendor tarball and lockfile, followed by frozen installation and
 checks. These were filesystem copies, not clones of a committed repository.
+
+## Generated sprite artwork
+
+The local game now uses an original hand-painted sprite pack for six crop states,
+shrubs, two buildings, well, potting bench, harvest baskets, tools and gardener.
+See [the sprite pack](art/README.md) for the catalog, prompts, normalized PNGs,
+atlas layout and explicit local preparation. Artwork is presentation-only: the
+observation-only host still owns every movement, resource and harvested outcome.
+
+## In-game speech
+
+The host owns its speech bubble, placement and animation. It implements the
+optional `MountedGame.say(speech)` presentation API for player-requested chat.
+Autonomous/requested game dialogue is displayed after the game's normal freshness
+checks. Bubbles type the text visually, announce the whole line accessibly, respect
+reduced motion and release timers/animations on pause or destruction. The SDK
+returns authored scenario/fallback reactions instead of quoting raw host reports;
+model plan explanations are not dialogue. No action authority is added.

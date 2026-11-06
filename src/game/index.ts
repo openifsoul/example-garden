@@ -8,6 +8,9 @@ export async function mount(
 ): Promise<MountedGame> {
   const simulation = new GardenSimulation();
   const root = document.createElement("section");
+  root.className = "soul-garden";
+  root.style.cssText =
+    "padding:0;background:transparent;color:var(--foreground)";
   root.setAttribute("aria-label", "Little orchard companion garden");
   const scene = document.createElement("div");
   const status = document.createElement("p");
@@ -16,10 +19,11 @@ export async function mount(
   speech.setAttribute("aria-live", "polite");
   const hint = document.createElement("p");
   hint.textContent =
-    "A quiet 2–4 minute garden visit. Your companion tends the orchard autonomously.";
+    "Just watch. Your companion manages water, shares three portions of compost and harvests the orchard.";
   hint.style.cssText =
     "font-size:13px;color:var(--muted-foreground);margin:8px 0";
-  status.style.cssText = "font-size:14px;margin:12px 0 6px";
+  status.style.cssText =
+    "font-size:12px;margin:12px 0 6px;font-variant-numeric:tabular-nums";
   speech.style.cssText =
     "min-height:48px;padding:12px;border:1px solid var(--border);border-radius:var(--radius,8px);margin:8px 0";
   const button = document.createElement("button");
@@ -27,8 +31,7 @@ export async function mount(
   button.textContent = "Pause garden";
   button.style.cssText =
     "min-height:44px;padding:8px 16px;border:1px solid var(--border);background:var(--background);color:var(--foreground);border-radius:var(--radius,8px);cursor:pointer";
-  for (const child of [scene, hint, status, speech, button])
-    root.appendChild(child);
+  for (const child of [scene, hint, status, button]) root.appendChild(child);
   container.appendChild(root);
   let destroyed = false,
     paused = false,
@@ -54,6 +57,7 @@ export async function mount(
   const pause = () => {
     if (!destroyed) {
       paused = true;
+      view?.pauseSpeech();
       button.textContent = "Resume garden";
       status.textContent = `Paused · ${simulation.progress}`;
     }
@@ -61,6 +65,7 @@ export async function mount(
   const resume = () => {
     if (!destroyed) {
       paused = false;
+      view?.resumeSpeech();
       lastTime = 0;
       button.textContent = "Pause garden";
       const apply = deferred;
@@ -69,7 +74,14 @@ export async function mount(
     }
   };
   const toggle = () => (paused ? resume() : pause());
-  const game = { pause, resume, destroy };
+  const game = {
+    pause,
+    resume,
+    destroy,
+    say(text: string) {
+      view?.say(text);
+    },
+  };
   button.addEventListener("click", toggle);
   options.signal.addEventListener("abort", destroy, { once: true });
   if (options.signal.aborted) {
@@ -81,6 +93,7 @@ export async function mount(
       scene,
       simulation,
       options.character.name,
+      options.character.id,
     );
     if (destroyed) {
       created.destroy();
@@ -102,7 +115,7 @@ export async function mount(
     const requestId = `${idPrefix}-${++requestNumber}`;
     const context =
       phase === "watering"
-        ? `${options.character.name} is in a synthetic garden with eight thirsty plants. Choose the order for the whole watering batch. The host handles two well trips and all movement.`
+        ? `${options.character.name} is in a synthetic garden with eight thirsty plants. Choose the order for the whole watering batch. Only three portions of compost are available; the first three beds in your chosen order will each yield an extra fruit. The host handles two well trips, feeding and all movement.`
         : "All eight plants are watered and the fruit is now ripe. Choose the order for collecting the whole harvest; the host handles all movement and picking.";
     speech.textContent = "Choosing a garden priority…";
     // Bound local waiting without claiming cancellation of an external request.
@@ -138,6 +151,7 @@ export async function mount(
           typeof decision.speech === "string";
         simulation.setPriority(valid ? decision.choiceId : "near-first");
         speech.textContent = `${options.character.name}: ${valid && decision.speech.trim() ? decision.speech.slice(0, 280) : fallback.speech}${!valid || decision.source === "fallback" ? " (Host fallback)" : ""}`;
+        view?.say(valid ? decision.speech : fallback.speech);
         pending = false;
       };
       if (destroyed) return;
@@ -165,13 +179,13 @@ export async function mount(
           : pending
             ? "Choosing priorities"
             : simulation.phase === "growing"
-              ? "Letting the fruit ripen"
+              ? `Fruit ripening ${Math.round(simulation.growth * 100)}%`
               : `${simulation.task[0].toUpperCase()}${simulation.task.slice(1)}`;
       const nextStatus = `${activity} · ${simulation.progress}`;
       if (status.textContent !== nextStatus) status.textContent = nextStatus;
       if (simulation.phase === "complete") {
         button.disabled = true;
-        speech.textContent = `${options.character.name} finished the garden visit. All eight fruits are in the basket.`;
+        speech.textContent = `${options.character.name} finished the garden visit. ${simulation.fruit + simulation.bonusFruit} fruits are in the basket, with ${simulation.bonusFruit} extra from compost.`;
       }
       view?.render();
     }

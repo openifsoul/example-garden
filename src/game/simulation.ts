@@ -2,11 +2,12 @@
 export type Point = { x: number; y: number };
 export type GardenPhase = "watering" | "growing" | "harvesting" | "complete";
 export type GardenTask =
-  "walking" | "filling" | "watering" | "picking" | "resting";
+  "walking" | "filling" | "watering" | "feeding" | "picking" | "resting";
 export interface Plant extends Point {
   id: number;
   watered: boolean;
   harvested: boolean;
+  fed: boolean;
 }
 export interface GardenEvent {
   id: string;
@@ -21,6 +22,7 @@ export class GardenSimulation {
     y: 205 + Math.floor(id / 4) * 115,
     watered: false,
     harvested: false,
+    fed: false,
   }));
   readonly companion: Point = { x: 105, y: 390 };
   phase: GardenPhase = "watering";
@@ -28,6 +30,8 @@ export class GardenSimulation {
   elapsed = 0;
   water = 0;
   fruit = 0;
+  compost = 3;
+  bonusFruit = 0;
   private order = this.plants.map((p) => p.id);
   private target: Point = WELL;
   private remaining = 0;
@@ -50,7 +54,12 @@ export class GardenSimulation {
     return true;
   }
   get progress(): string {
-    return `${this.plants.filter((p) => p.watered).length}/8 watered · ${this.fruit}/8 fruit`;
+    return `${this.plants.filter((p) => p.watered).length}/8 watered · ${this.water}/4 water · ${this.compost}/3 compost · ${this.fruit + this.bonusFruit} fruit collected`;
+  }
+  get growth(): number {
+    if (this.phase === "watering") return 0;
+    if (this.phase !== "growing") return 1;
+    return Math.max(0, Math.min(1, 1 - (this.growUntil - this.elapsed) / 25));
   }
   get needsDecision(): boolean {
     return (
@@ -131,7 +140,21 @@ export class GardenSimulation {
       .map((id) => this.plants[id])
       .find((p) => (this.phase === "watering" ? !p.watered : !p.harvested));
     if (!plant) return;
-    if (this.task === "watering") {
+    if (this.task === "watering" && this.compost > 0) {
+      this.task = "feeding";
+      this.remaining = 3;
+      return;
+    }
+    if (this.task === "watering" || this.task === "feeding") {
+      if (this.task === "feeding") {
+        plant.fed = true;
+        this.compost--;
+        this.events.push({
+          id: `garden-fed-${plant.id}`,
+          kind: "progress",
+          summary: `The companion used one portion of compost on bed ${plant.id + 1}. This bed will yield an extra fruit.`,
+        });
+      }
       plant.watered = true;
       this.water--;
       this.events.push({
@@ -151,10 +174,11 @@ export class GardenSimulation {
     } else if (this.task === "picking") {
       plant.harvested = true;
       this.fruit++;
+      if (plant.fed) this.bonusFruit++;
       this.events.push({
         id: `garden-picked-${plant.id}`,
         kind: "progress",
-        summary: `The host collected fruit ${plant.id + 1}.`,
+        summary: `The host harvested bed ${plant.id + 1}: ${plant.fed ? "two fruits from the composted soil" : "one fruit"}.`,
       });
       if (this.fruit === this.plants.length) {
         this.phase = "complete";
@@ -162,8 +186,7 @@ export class GardenSimulation {
         this.events.push({
           id: "garden-complete",
           kind: "outcome",
-          summary:
-            "Garden complete: all eight plants watered and all eight fruits collected.",
+          summary: `Garden complete: all eight beds watered and harvested. ${this.fruit + this.bonusFruit} fruits collected, including ${this.bonusFruit} extra from three portions of compost.`,
         });
       } else this.walkToPlant();
     }

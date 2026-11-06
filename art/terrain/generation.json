@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-11-06",
+  "license": "Apache-2.0",
+  "size": [256, 256],
+  "preparation": "Originals retained locally in ignored output/terrain/source; downscaled with ImageMagick and encoded with cwebp -q 90. No generated cast shadows.",
+  "prompts": {
+    "grass": "Use case: stylized-concept. Asset type: seamless repeating square grass ground tile for a cozy hand-painted 2D orchard game. Primary request: an opaque edge-to-edge tiling surface texture of short soft grass, seen straight from above, flat orthographic ground. Style: delicate watercolor/gouache brushwork matching warm storybook orchard sprites, softly mottled sage green, muted yellow-green, fine subtle grass strokes, very sparse tiny clover. Uniform lighting and fine scale details distributed evenly over the whole image. Restrained contrast so small gardener sprites remain readable. The texture should repeat seamlessly at all four edges. No soil patch, roads, props, objects, trees, bushes, fence, buildings, characters, shadows, border, frame, text, grid or perspective. Square texture fills entire image.",
+    "earth": "Use case: stylized-concept. Asset type: seamless repeating square earth ground tile for a cozy hand-painted 2D orchard game. Primary request: opaque edge-to-edge tiling surface texture of warm cultivated garden earth, straight top-down orthographic view. Style: soft watercolor/gouache storybook illustration, warm muted ochre sandy brown, gently mottled fine loam, a few tiny rounded pebbles, subtle short broken horizontal rake marks, small understated irregularities. Flat uniform soft lighting with restrained contrast. Ground only, fine surface detail evenly distributed. Must repeat seamlessly on all four edges. No grass, plants, objects, roots, foliage, roads, path edges, bed border, props, shadows, text, frame, grid or perspective. Square texture fills entire image."
+  }
+}

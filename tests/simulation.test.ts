@@ -50,3 +50,33 @@ test("unknown and duplicate proposals cannot bypass host phase boundaries", () =
   assert.equal(host.fruit, 0);
   assert.deepEqual(host.drainEvents(), []);
 });
+
+test("companion distributes only three compost portions in its chosen order and harvests the bonus", () => {
+  for (const priority of ["near-first", "far-first"]) {
+    const host = new GardenSimulation();
+    const events = [];
+    for (let i = 0; i < 2400 && host.phase !== "complete"; i++) {
+      if (host.needsDecision) host.setPriority(priority);
+      host.step(0.1);
+      events.push(...host.drainEvents());
+      assert.ok(host.compost >= 0 && host.compost <= 3);
+      assert.ok(host.growth >= 0 && host.growth <= 1);
+    }
+    assert.equal(host.phase, "complete");
+    assert.deepEqual(
+      host.plants.filter((p) => p.fed).map((p) => p.id),
+      priority === "near-first" ? [0, 1, 2] : [5, 6, 7],
+    );
+    assert.equal(host.compost, 0);
+    assert.equal(host.bonusFruit, 3);
+    assert.equal(host.fruit + host.bonusFruit, 11);
+    assert.equal(
+      events.filter((e) => e.id.startsWith("garden-fed-")).length,
+      3,
+    );
+    assert.match(events.at(-1)!.summary, /11 fruits collected/);
+    host.step(10);
+    assert.equal(host.fruit + host.bonusFruit, 11);
+    assert.deepEqual(host.drainEvents(), []);
+  }
+});
